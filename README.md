@@ -5,7 +5,8 @@ This project provides a custom command extension for VEGAS Pro that allows the i
 # Installation:
 Download the zip archive Vegas-CTAImport.zip from the last release in this github repository.
 Unzip the content into the folder Documents\Vegas Application Extensions.
-After restart of VEGAS Pro you can activate the extension by selecting the option "view->extensions->IMport CTA projects"
+After restart of VEGAS Pro you can activate the extension by selecting the option
+"view->extensions->IMport CTA projects"
 A dockable window will open. You can dock this window in the VEGAS Pro UI where you want or keep it floating.
 
 # Usage
