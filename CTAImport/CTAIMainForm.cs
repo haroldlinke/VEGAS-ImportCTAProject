@@ -54,7 +54,7 @@ namespace CTAImport
             lblParam12.Visible = false;
             lblParam13.Text = "CameraRatio-Factor";
             lblParam13.Visible = false;
-            lbl_copyright.Text = "© Harold Linke 2023 - Version 0.04";
+            lbl_copyright.Text = "© Harold Linke 2023 - Version 0.05";
             groupBox1.Text = "Finetune Camera Keyframes";
 
 
