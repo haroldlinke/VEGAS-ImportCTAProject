@@ -7,13 +7,13 @@ using System.Text;
 using System.Windows.Forms;
 using ScriptPortal.Vegas;
 
-namespace CTAImportTest
+namespace CTAImport
 {
-    public class CCTestDock : DockableControl
+    public class CTAImportDock : DockableControl
     {
-        private CTAImportTest.CCMainForm myform = null;
+        private CTAImport.CTAIMainForm myform = null;
 
-        public CCTestDock() : base("CCTestInternal")
+        public CTAImportDock() : base("CTAImportInternal")
         {
             this.DisplayName = "Import CartoonAnimator project";
         }
@@ -30,7 +30,7 @@ namespace CTAImportTest
 
         protected override void OnLoad(EventArgs args)
         {
-            myform = new CTAImportTest.CCMainForm(myVegas);
+            myform = new CTAImport.CTAIMainForm(myVegas);
             myform.Dock = DockStyle.Fill;
             this.Controls.Add(myform);
         }
@@ -43,10 +43,10 @@ namespace CTAImportTest
 }
 
 
-public class CCTestCCM : ICustomCommandModule
+public class CTAImportCCM : ICustomCommandModule
 {
     public Vegas myVegas = null;
-    CustomCommand CCM = new CustomCommand(CommandCategory.View, "CTAImportTest");
+    CustomCommand CCM = new CustomCommand(CommandCategory.View, "CTAImport");
 
     public void InitializeModule(Vegas vegas)
     {
@@ -65,14 +65,14 @@ public class CCTestCCM : ICustomCommandModule
 
     void HandlePICmdMenuPopup(Object sender, EventArgs args)
     {
-        CCM.Checked = myVegas.FindDockView("CTATestInternal");
+        CCM.Checked = myVegas.FindDockView("CTAImportInternal");
     }
 
     void HandlePICmdInvoked(Object sender, EventArgs args)
     {
-        if (!myVegas.ActivateDockView("CTATestInternal"))
+        if (!myVegas.ActivateDockView("CTAImportInternal"))
         {
-            CTAImportTest.CCTestDock CCMDock = new CTAImportTest.CCTestDock();
+            CTAImport.CTAImportDock CCMDock = new CTAImport.CTAImportDock();
             CCMDock.AutoLoadCommand = CCM;
             CCMDock.PersistDockWindowState = true;
             myVegas.LoadDockView(CCMDock);

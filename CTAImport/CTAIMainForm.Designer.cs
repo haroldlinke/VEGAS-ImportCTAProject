@@ -1,7 +1,7 @@
 ﻿
-namespace CTAImportTest
+namespace CTAImport
 {
-    partial class CCMainForm
+    partial class CTAIMainForm
     {
         /// <summary> 
         /// Required designer variable.
