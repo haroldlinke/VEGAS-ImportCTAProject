@@ -3,14 +3,12 @@
 This project provides a custom command extension for VEGAS Pro that allows the import of CartoonAnimator projects.
 
 # Installation:
-Download the zip archive Vegas-CTAImport.zip from the last release in this github repository.
+- Download the zip archive Vegas-CTAImport.zip from the last release in this github repository.
 
-Unzip the content into the folder Documents\Vegas Application Extensions.
+- Unzip the content into the folder Documents\Vegas Application Extensions.
 
-After restart of VEGAS Pro you can activate the extension by selecting the option
-"view->extensions->IMport CTA projects"
-
-A dockable window will open. You can dock this window in the VEGAS Pro UI where you want or keep it floating.
+- After restart of VEGAS Pro you can activate the extension by selecting the option
+"view->extensions->Import CTA projects" a dockable window will open. You can dock this window in the VEGAS Pro UI where you want or keep it floating.
 
 # Usage
 The extension provides one Button: "Import CTA Project".
@@ -37,8 +35,8 @@ Make sure that the export parameters of CartoonAnimator (size, width and height 
 There is no check if the parameters are compatible. It might be on purpose.
 
 # known issues
-trying to import a not compatible JSON-File might cause a crash to the command with a cryptic error message coming from VEGAS that something was going wrong.
-As the 3-D models of Cartoon-Animator and VEGAS are completely different the resulting scene may not always look identical in CartoonAnimator and VEGAS. I tried to make it look as similar as possible.
-If you find visible errors, it would be nice to inform me and provide me with the CartoonAnimator project so that I can reproduce the issue.
+- trying to import a not compatible JSON-File might cause a crash to the command with a cryptic error message coming from VEGAS that something was going wrong.
+- As the 3-D models of Cartoon-Animator and VEGAS are completely different the resulting scene may not always look identical in CartoonAnimator and VEGAS. I tried to make it look as similar as possible.
+- If you find visible errors, it would be nice to inform me and provide me with the CartoonAnimator project so that I can reproduce the issue.
 
 
