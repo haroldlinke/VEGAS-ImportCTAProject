@@ -1,1 +1,2 @@
-# CCTest2
+# VEGAS-ImportCTAProject
+
