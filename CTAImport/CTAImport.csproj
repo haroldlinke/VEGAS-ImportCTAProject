@@ -7,8 +7,8 @@
     <ProjectGuid>{26A9E3D6-414A-4C66-9102-28F89588EB01}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CTAImportTest</RootNamespace>
-    <AssemblyName>CTAImportTest</AssemblyName>
+    <RootNamespace>CTAImport</RootNamespace>
+    <AssemblyName>CTAImport</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>C:\Users\Harold\Documents\Vegas Application Extensions\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -60,20 +60,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CCMainForm.cs">
+    <Compile Include="CTAIMainForm.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="CCMainForm.Designer.cs">
-      <DependentUpon>CCMainForm.cs</DependentUpon>
+    <Compile Include="CTAIMainForm.Designer.cs">
+      <DependentUpon>CTAIMainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="CCTest.cs">
+    <Compile Include="CTAImport.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="CCMainForm.resx">
-      <DependentUpon>CCMainForm.cs</DependentUpon>
+    <EmbeddedResource Include="CTAIMainForm.resx">
+      <DependentUpon>CTAIMainForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

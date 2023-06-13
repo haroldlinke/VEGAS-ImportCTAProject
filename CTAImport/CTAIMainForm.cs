@@ -12,15 +12,15 @@ using System.Windows.Forms;
 using ScriptPortal.Vegas;
 using ScriptPortal.MediaSoftware.Skins;
 
-namespace CTAImportTest
+namespace CTAImport
 {
-    public partial class CCMainForm : UserControl
+    public partial class CTAIMainForm : UserControl
     {
         Vegas myVegas;
 
         //public Vegas myVegas;
 
-        public CCMainForm(Vegas vegas)
+        public CTAIMainForm(Vegas vegas)
         {
             myVegas = vegas;
             SaveLogFile(MethodBase.GetCurrentMethod(), "Started");
