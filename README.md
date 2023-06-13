@@ -31,6 +31,10 @@ Attention: The values are not saved!!
 
 The imported tracks are added before the first track at the current cursor position. This allows you to add a CartoonAnimator scene to an existing project.
 
+You can now add further video tracks and position them at any layer in the 3-D space by changing the z-position in 3D-trackmotion. 
+
+If you want the added video to follow the camera movements, make it a child to the “camera” track.
+
 Make sure that the export parameters of CartoonAnimator (size, width and height and fps) fit with the project settings in VEGAS.
 There is no check if the parameters are compatible. It might be on purpose.
 
