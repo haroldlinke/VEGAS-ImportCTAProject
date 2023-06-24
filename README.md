@@ -1,5 +1,7 @@
 # VEGAS-ImportCTAProject
 
+
+=======
 This project provides a custom command extension for VEGAS Pro that allows the import of CartoonAnimator projects.
 
 # Installation:
@@ -42,5 +44,3 @@ There is no check if the parameters are compatible. It might be on purpose.
 - trying to import a not compatible JSON-File might cause a crash to the command with a cryptic error message coming from VEGAS that something was going wrong.
 - As the 3-D models of Cartoon-Animator and VEGAS are completely different the resulting scene may not always look identical in CartoonAnimator and VEGAS. I tried to make it look as similar as possible.
 - If you find visible errors, it would be nice to inform me and provide me with the CartoonAnimator project so that I can reproduce the issue.
-
-
