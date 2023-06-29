@@ -1,7 +1,4 @@
 # VEGAS-ImportCTAProject
-
-
-=======
 This project provides a custom command extension for VEGAS Pro that allows the import of CartoonAnimator projects.
 
 # Installation:
