@@ -61,16 +61,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CTAImport.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CTAIMainForm.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="CTAIMainForm.Designer.cs">
       <DependentUpon>CTAIMainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="CTAImport.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="CTAIMainForm.resx">
