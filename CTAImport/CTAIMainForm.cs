@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ScriptPortal.Vegas;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,26 +9,30 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using ScriptPortal.Vegas;
-using ScriptPortal.MediaSoftware.Skins;
 using static CTAImport.CTAIMainForm;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace CTAImport
 {
     public partial class CTAIMainForm : UserControl
     {
-        Vegas myVegas;
-        string CTAVersion = "1.00";
+       Vegas myVegas;
+        string CTAVersion = "V01.017";
 
         bool debug = false;
 
         //public Vegas myVegas;
 
+        private static String RGBConverter(System.Drawing.Color c)
+        {
+            return "RGB(" + c.R.ToString() + "," + c.G.ToString() + "," + c.B.ToString() + ")";
+        }
 
         public CTAIMainForm(Vegas vegas)
         {
-            
+
             myVegas = vegas;
             SaveLogFile(MethodBase.GetCurrentMethod(), "Started");
 
@@ -36,34 +41,23 @@ namespace CTAImport
 #endif
 
             InitializeComponent();
-            this.BackColor = lblMain1.BackColor;
-            groupBox1.ForeColor = lblMain1.ForeColor;
             lblMain1.Text = "Import CartoonAnimator projects into VEGAS";
-            lblMain2.Text = "In order to link an animated project into VEGAS, kindly import the ";
+            lblMain2.Text = "In order to import an animated project into VEGAS, kindly import the ";
             lblMain3.Text = "Cartoon Animator JSON file created by the <Export to After Effects> command";
 
-            checkBox1.CheckState = CheckState.Checked;
- 
-            lblParam01.Text = "Offset x";
-            lblParam02.Text = "Offset y";
-            lblParam03.Text = "Offset z";
-            lblParam04.Text = "Pivot x factor";
-            lblParam04.Visible = false;
-            lblParam05.Text = "Pivot Y Factor";
-            lblParam05.Visible = false;
-            lblParam06.Text = "";
-            lblParam06.Visible = false;
-            lblParam07.Text = "Stretch Factor x";
-            lblParam08.Text = "Stretch Factor y";
-            lblParam09.Text = "Stretch Factor z";
-            lblParam10.Text = "camdepth";
-            lblParam10.Visible = false;
-            lblParam11.Text = "camwindow-Width";
-            lblParam11.Visible = false;
-            lblParam12.Text = "";
-            lblParam12.Visible = false;
-            lblParam13.Text = "CameraRatio-Factor";
-            lblParam13.Visible = false;
+            lblParam01.Text = "Layer Offset x";
+            lblParam02.Text = "Layer Offset y";
+            lblParam03.Text = "Layer Offset z";
+            lblParam04.Text = "Cam Offset x";
+            lblParam05.Text = "Cam Offset y";
+            lblParam06.Text = "Cam Offset z";
+            lblParam07.Text = "Layer Factor x";
+            lblParam08.Text = "Layer Factor y";
+            lblParam09.Text = "Layer Factor z";
+            lblParam10.Text = "Cam Factor x";
+            lblParam11.Text = "Cam Factor y";
+            lblParam12.Text = "Cam Factor z";
+            lblParam13.Text = "CamRatio Factor";
             if (this.debug)
             {
                 lbl_copyright.Text = "© Harold Linke 2023 - Version " + this.CTAVersion + "(DEBUG)";
@@ -72,41 +66,38 @@ namespace CTAImport
             {
                 lbl_copyright.Text = "© Harold Linke 2023 - Version " + this.CTAVersion;
             }
-  
-            groupBox1.Text = "Finetune Camera Keyframes";
-
-
+            groupBox1.Text = "Finetune Keyframes";
             numParam01.Value = 0;
             numParam02.Value = 0;
             numParam03.Value = 0;
-            numParam04.Value = 100;
-            numParam04.Visible = false;
-            numParam05.Value = 100;
-            numParam05.Visible = false;
-            numParam06.Value = 100;
-            numParam06.Visible = false;
+            numParam04.Value = 0;
+            numParam05.Value = 0;
+            numParam06.Value = 0;
             numParam07.Value = 100;
             numParam08.Value = 100;
             numParam09.Value = 100;
             numParam10.Value = 100;
-            numParam10.Visible = false;
             numParam11.Value = 100;
-            numParam11.Visible = false;
-            numParam12.Value = 0;
-            numParam12.Visible = false;
+            numParam12.Value = 100;
             numParam13.Value = 100;
-            numParam13.Visible = false;
 
-            checkBox1.Visible = false;
-            checkBox3.Visible = false;
-
+            btnImportCTA.Text = "Import CTA Project";
+            btnRecalcCameraKeyFrames.Text = "Recalc Camera KeyFrames";
+            btnRecalcCameraKeyFrames.Visible = false;
+            setcolors();
         }
-        
+
+        public void setcolors()
+        {
+            this.BackColor = Color.Empty; // this.lblMain1.BackColor;
+            //ShowLogMessage(RGBConverter(this.lblMain1.BackColor));
+            groupBox1.ForeColor = this.lblMain1.ForeColor;
+        }
+
         public void btnImportCTA_Click(object sender, EventArgs e)
         {
-           
             string s = "CTA Import - Version:" + this.CTAVersion;
-            SaveLogFile(MethodBase.GetCurrentMethod(), s,true);
+            SaveLogFile(MethodBase.GetCurrentMethod(), s, true);
             using (UndoBlock undo = new UndoBlock("Import CTA Project"))
             {
                 ImportCTAProject(myVegas);
@@ -115,10 +106,33 @@ namespace CTAImport
 
         public void btnRecalcCameraKeyFrames_Click(object sender, EventArgs e)
         {
-            using (UndoBlock undo = new UndoBlock("Recalc Camera KeyFrames"))
+            try
             {
-                SaveLogFile(MethodBase.GetCurrentMethod(), "Started");
-                Camera_Create(CameraVidtrack, myCreate.camera, 0); ;
+                using (UndoBlock undo = new UndoBlock("Recalc Camera KeyFrames"))
+                {
+                    SaveLogFile(MethodBase.GetCurrentMethod(), "Started");
+                    Camera_Create(CameraVidtrack, myCreate.camera, 0);
+                    int trackstartindex = CameraVidtrack.Index;
+                    trackstartindex += 1; // index of track with first layer
+
+                    foreach (Comp jsonComp in myCreate.comps)
+                    {
+                        string s = "------------------------------------------------------------------------------------------------" + "\r\n";
+                        s += "* Update Layer started: " + jsonComp.name + "\r\n";
+                        s += "* HasAudio:" + jsonComp.hasAudio + "\r\n";
+                        s += "* HasVideo:" + jsonComp.hasVideo + "\r\n";
+                        s += "* trackstartindex:" + trackstartindex + "\r\n";
+                        s += "------------------------------------------------------------------------------------------------" + "\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                        ShowLogMessage("Update Track: " + jsonComp.name + "\r\n");
+
+                        Layer_Create(jsonComp, ref trackstartindex, updateonly: true);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                ShowLogMessage("**Update-ERROR** " + exc.Message + "\r\n");
             }
         }
 
@@ -274,6 +288,7 @@ namespace CTAImport
         public double standardZinCTACam = -2099.2021484375;
         public Root CTAScene;
         string jsonString;
+        string FileName = "";
 
         string maindir;
 
@@ -348,20 +363,21 @@ namespace CTAImport
 
         public void Comp_Create()
         {
-            use_camera = checkBox1.Checked;
+            ShowLogMessage("---------------------------------------\r\nImport Started\r\n---------------------------------------\r\n");
+            use_camera = true;
             // create parent track
             VideoTrack vidTrack = CreateFirstVideoTrack("Camera");
             cursorLocation = myVegas.Transport.CursorPosition;
 
             Comp_Add_Layer();
-
             if (CTAScene.smartType)
             {
                 Comp_Add_Camera(vidTrack);
             }
+            ShowLogMessage("---------------------------------------\r\nImport Finished\r\n---------------------------------------\r\n");
         }
 
-        public void Audio_Create(string jsonComp_name,ref int trackindex)
+        public void Audio_Create(string jsonComp_name, ref int trackindex)
         {
             string AudioDir = "Audio";
             string fileName;
@@ -369,25 +385,55 @@ namespace CTAImport
             string s = "Create Audio: " + jsonComp_name;
             SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
-            fileName = Path.Combine(maindir, SceneName, AudioDir, jsonComp_name+".wav");
+            fileName = Path.Combine(maindir, SceneName, AudioDir, jsonComp_name + ".wav");
 
             audioTrack = AddAudioTrack(jsonComp_name, trackindex);
             trackindex += 1;
             AddAudioFileToTimeline(fileName, audioTrack, cursorLocation);
         }
 
-        public PosObj Layer_Calculate_Position(VideoTrack vidTrack, Comp jsonComp, PosObj posObj)
+        public PosObj Layer_Interpolate_Position(PosObj prevpos, PosObj nextpos, int time_ms)
+        {
+            PosObj interpos = new PosObj();
+
+            double time_factor = ((double)time_ms - (double)prevpos.time) / ((double)nextpos.time - (double)prevpos.time);
+
+            interpos.x = prevpos.x + ((nextpos.x - prevpos.x) * time_factor);
+            interpos.y = prevpos.y + ((nextpos.y - prevpos.y) * time_factor);
+            interpos.z = prevpos.z + ((nextpos.z - prevpos.z) * time_factor);
+            interpos.time = time_ms;
+
+            return interpos;
+
+        }
+
+        public ScaleObj Layer_Interpolate_Scale(ScaleObj prevscale, ScaleObj nextscale, int time_ms)
+        {
+            ScaleObj interscale = new ScaleObj();
+
+            double time_factor = ((double)time_ms - (double)prevscale.time) / ((double)nextscale.time - (double)prevscale.time);
+
+            interscale.x = prevscale.x + ((nextscale.x - prevscale.x) * time_factor);
+            interscale.y = prevscale.y + ((nextscale.y - prevscale.y) * time_factor);
+            interscale.z = prevscale.z + ((nextscale.z - prevscale.z) * time_factor);
+            interscale.time = time_ms;
+
+            return interscale;
+
+        }
+
+        public PosObj Layer_Calculate_Position(PosObj posObj)
         {
             PosObj pos = new PosObj();
 
-            double camRatio = cameraRatio;
+            double camRatio = this.cameraRatio;
 
             double transFactorX = sceneRatio.width / sceneRatio.scene;
             double transFactorY = sceneRatio.height / sceneRatio.scene;
 
             pos.x = transFactorX * posObj.x;
             pos.y = transFactorY * posObj.z;  // z and y are exchanged
-            pos.z = camRatio * posObj.y;
+            pos.z = posObj.y * camRatio;
 
             return pos;
 
@@ -419,10 +465,10 @@ namespace CTAImport
         {
             Pivot calcanchor = new Pivot();
 
-            calcanchor.x = - pivot.x;
-           
+            calcanchor.x = -pivot.x;
+
             calcanchor.y = pivot.y;
-            
+
             calcanchor.z = pivot.z;
 
             return calcanchor;
@@ -436,7 +482,7 @@ namespace CTAImport
             double sceneRatio = this.sceneRatio.scene;
             last_search_pivot = jsonComp.compObj.pivot[0];
 
-            for (int i = start_index;i< jsonComp.compObj.pivot.Count;i++)
+            for (int i = start_index; i < jsonComp.compObj.pivot.Count; i++)
             {
                 search_pivot = jsonComp.compObj.pivot[i];
                 if (search_pivot.time == time)
@@ -454,7 +500,7 @@ namespace CTAImport
                         pivot.x = last_search_pivot.x / sceneRatio;
                         pivot.y = last_search_pivot.z / sceneRatio;
                         pivot.z = last_search_pivot.y * this.cameraRatio;
-                        start_index = i-1;
+                        start_index = i - 1;
                         return pivot;
                     }
                 }
@@ -463,7 +509,7 @@ namespace CTAImport
             pivot.x = last_search_pivot.x / sceneRatio;
             pivot.y = last_search_pivot.z / sceneRatio;
             pivot.z = last_search_pivot.y * this.cameraRatio;
- 
+
             return pivot;
         }
 
@@ -528,17 +574,25 @@ namespace CTAImport
         {
             CompObj compObj = jsonComp.compObj;
             SaveLogFile(MethodBase.GetCurrentMethod(), "started");
-            
+
             ScaleObj scale1;
-            ScaleObj scale;
+            ScaleObj calcScale = new ScaleObj();
+            ScaleObj prevCalcScale = new ScaleObj();
+            ScaleObj newCalcScale = new ScaleObj();
             ScaleObj compScale = new ScaleObj();
             compScale.x = jsonComp.compScale.scaleX;
             compScale.y = jsonComp.compScale.scaleZ;
             compScale.z = jsonComp.compScale.scaleY;
             double sceneRatio = this.sceneRatio.scene;
             int pivotstartindex = 0;
+            int prevpivotindex = 0;
             int objidx = 0;
-
+            Pivot calcPivot = new Pivot();
+            //Pivot prevcalcPivot = new Pivot();
+            Pivot pivot1;
+            PosObj prevCalcPos = new PosObj();
+            PosObj newCalcPos;
+            PosObj calcpos;
             foreach (PosObj posobj in compObj.posObjs)
             {
                 Timecode kftime = Timecode.FromMilliseconds(scaletime * posobj.time);
@@ -551,34 +605,50 @@ namespace CTAImport
                 {
                     tmKF = Search_Motion_Keyframe(ref vidTrack, scaletime * posobj.time);
                 }
-                PosObj calcpos = Layer_Calculate_Position(vidTrack, jsonComp, posobj);
 
-                Pivot pivot;
-                Pivot pivot1;
-                
-                pivot1 = Layer_Search_Correponding_Pivot(jsonComp, posobj.time,ref pivotstartindex);
-                pivot = Layer_Calculate_AnchorPoint(pivot1);
+                calcpos = Layer_Calculate_Position(posobj);
+                calcpos.time = posobj.time;
+
+                prevpivotindex = pivotstartindex;
+                pivot1 = Layer_Search_Correponding_Pivot(jsonComp, posobj.time, ref pivotstartindex);
+                calcPivot = Layer_Calculate_AnchorPoint(pivot1);
+                calcPivot.time = posobj.time;
+
                 scale1 = Layer_Search_Correponding_Scale(jsonComp, posobj.time, objidx);
-                scale = Layer_Calculate_Scale(scale1, compScale);
+                calcScale = Layer_Calculate_Scale(scale1, compScale);
+                calcScale.time = posobj.time;
 
                 double factorWidth;
                 double factorHeight;
 
                 if ((orgWidth / orgHeight) > ((double)(SceneWidth) / (double)(SceneHeight))) // orgWidth is the scale factor
                 {
-                     factorWidth = 1;
-                    factorHeight = orgHeight/orgWidth * SceneHeight / SceneWidth;
+                    factorWidth = 1;
+                    factorHeight = orgHeight / orgWidth * SceneHeight / SceneWidth;
+
+                    tmKF.Width = orgWidth * calcScale.x;
+                    tmKF.Height = orgWidth * calcScale.y * SceneHeight / SceneWidth;
                 }
                 else                                       // objheight is the scale factor
                 {
                     factorWidth = orgWidth / orgHeight * SceneWidth / SceneHeight;
                     factorHeight = 1;
+
+                    tmKF.Width = orgHeight * calcScale.x * SceneWidth / SceneHeight;
+                    tmKF.Height = orgHeight * calcScale.y;
                 }
 
+                double xfactor = (double)numParam07.Value / 100;
+                double xoffset = (double)numParam01.Value;
+                double yfactor = (double)numParam08.Value / 100;
+                double yoffset = (double)numParam02.Value;
+                double zfactor = (double)numParam09.Value / 100;
+                double zoffset = (double)numParam03.Value;
+
                 tmKF.Type = VideoKeyframeType.Linear;
-                tmKF.PositionX = calcpos.x - (pivot.x * scale.x); 
-                tmKF.PositionY = calcpos.y + (pivot.y * scale.y);
-                tmKF.PositionZ = calcpos.z + (pivot.z * scale.z);
+                tmKF.PositionX = calcpos.x * xfactor - (calcPivot.x * calcScale.x) + xoffset;
+                tmKF.PositionY = calcpos.y * yfactor + (calcPivot.y * calcScale.y) + yoffset;
+                tmKF.PositionZ = calcpos.z * zfactor + (calcPivot.z * calcScale.z) + zoffset;
 
                 RotObj rotobj = Layer_Search_Correponding_RotObj(jsonComp, posobj.time, objidx);
                 RotObj calcRot = Layer_Calculate_Rotation(rotobj);
@@ -587,37 +657,119 @@ namespace CTAImport
                 tmKF.RotationY = calcRot.y;
                 tmKF.RotationZ = calcRot.z;
 
-                tmKF.RotationOffsetX = + pivot.x * scale.x;
-                tmKF.RotationOffsetY = - pivot.y * scale.y;
-                tmKF.RotationOffsetZ = - pivot.z * scale.z;
+                tmKF.RotationOffsetX = +calcPivot.x * calcScale.x;
+                tmKF.RotationOffsetY = -calcPivot.y * calcScale.y;
+                tmKF.RotationOffsetZ = -calcPivot.z * calcScale.z;
 
                 string s = "Layer_Pos_Pivot_Correction\r\n";
                 s += jsonComp.name + "\r\n";
                 s += posobj.time + "\r\n";
                 s += "tmKF-Position" + tmKF.Position.ToPositionString() + "\r\n";
                 s += "sceneRatio  " + sceneRatio + "\r\n";
-                s += "pivot.x  " + pivot.x + "\r\n";
-                s += "pivot.y  " + pivot.y + "\r\n";
-                s += "pivot.z  " + pivot.z + "\r\n";
-                s += "scale.x  " + scale.x + "\r\n";
-                s += "scale.y  " + scale.y + "\r\n";
-                s += "scale.z  " + scale.z + "\r\n";
+                s += "calcPivot.x  " + calcPivot.x + "\r\n";
+                s += "calcPivot.y  " + calcPivot.y + "\r\n";
+                s += "calcPivot.z  " + calcPivot.z + "\r\n";
+                s += "calcScale.x  " + calcScale.x + "\r\n";
+                s += "calcScale.y  " + calcScale.y + "\r\n";
+                s += "calcScale.z  " + calcScale.z + "\r\n";
                 s += "calcpos.x  " + calcpos.x + "\r\n";
                 s += "calcpos.y  " + calcpos.y + "\r\n";
                 s += "calcpos.z  " + calcpos.z + "\r\n";
+                s += "xfactor  " + xfactor + "\r\n";
+                s += "xoffset  " + xoffset + "\r\n";
+                s += "yfactor  " + yfactor + "\r\n";
+                s += "yoffset  " + yoffset + "\r\n";
+                s += "zfactor  " + zfactor + "\r\n";
+                s += "zoffset  " + zoffset + "\r\n";
                 s += "PositionX  " + tmKF.PositionX + "\r\n";
                 s += "PositionY  " + tmKF.PositionY + "\r\n";
                 s += "PositionZ  " + tmKF.PositionZ + "\r\n";
-                SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                s += "lastpivotindex  " + prevpivotindex + "\r\n";
+                s += "pivotstartindex  " + pivotstartindex + "\r\n";
 
-                if (orgWidth > 0)
+                string s1 = s;
+                
+                Pivot search_pivot;
+                int time_ms;
+
+                newCalcPos = calcpos;
+                newCalcScale = calcScale;
+               
+                               
+                // handle pivot keyframes between last and current poskeyframe
+                if ((pivotstartindex-prevpivotindex)>1) // there are several pivot keyframes between lasxt pos keyframe and current keyframe
                 {
-                    tmKF.Width = orgWidth;
+                    for (int i = prevpivotindex + 1; i < pivotstartindex; i++) // handle all pivot keyframes between last pivot index and current pivot index 
+                    {
+                        search_pivot = jsonComp.compObj.pivot[i];
+                        pivot1.x = search_pivot.x / sceneRatio;
+                        pivot1.y = search_pivot.z / sceneRatio;
+                        pivot1.z = search_pivot.y; // * this.cameraRatio;
+
+                        calcPivot = Layer_Calculate_AnchorPoint(pivot1);
+                        time_ms = search_pivot.time;
+                        calcScale = Layer_Interpolate_Scale(prevCalcScale, newCalcScale, time_ms); //prevCalcScale; // possible interpolation between current calcScale and lastCalcScale needs to be added
+
+                        //kftime = Timecode.FromMilliseconds(time_ms);
+                        //tmKF = vidTrack.TrackMotion.InsertMotionKeyframe(kftime);
+                        //s = "new keyframe at: " + tmKF.Position.ToPositionString();
+                        //SaveLogFile(MethodBase.GetCurrentMethod(), s);
+
+                        tmKF = Search_Motion_Keyframe(ref vidTrack, time_ms);
+
+                        tmKF.Type = VideoKeyframeType.Linear;
+                        // for position the interpolation calculated by VEGAS is used, therefore only the pivot changes are added
+
+                        Pivot deltapivot = new Pivot();
+
+                        calcpos = Layer_Interpolate_Position(prevCalcPos,newCalcPos,time_ms);
+
+                        tmKF.Type = VideoKeyframeType.Linear;
+
+                        tmKF.PositionX = calcpos.x * xfactor - (calcPivot.x * calcScale.x) + xoffset;
+                        tmKF.PositionY = calcpos.y * yfactor + (calcPivot.y * calcScale.y) + yoffset;
+                        tmKF.PositionZ = calcpos.z * zfactor + (calcPivot.z * calcScale.z) + zoffset;
+
+                        tmKF.RotationOffsetX = +calcPivot.x * calcScale.x;
+                        tmKF.RotationOffsetY = -calcPivot.y * calcScale.y;
+                        tmKF.RotationOffsetZ = -calcPivot.z * calcScale.z;
+
+                        s = "Layer_Pos_Pivot_Correction Additional keyframe\r\n";
+                        s += jsonComp.name + "\r\n";
+                        s += "Pivot-Time ms:"+ time_ms + "\r\n";
+                        s += "tmKF-Position" + tmKF.Position.ToPositionString() + "\r\n";
+                        s += "search_pivot.time" + search_pivot.time + "\r\n";
+                        s += "search_pivot.x  " + search_pivot.x + "\r\n";
+                        s += "search_pivot.y  " + search_pivot.y + "\r\n";
+                        s += "search_pivot.z  " + search_pivot.z + "\r\n";
+                        s += "calcpivot.x  " + calcPivot.x + "\r\n";
+                        s += "calcpivot.y  " + calcPivot.y + "\r\n";
+                        s += "calcpivot.z  " + calcPivot.z + "\r\n";
+                        s += "scale.x  " + calcScale.x + "\r\n";
+                        s += "scale.y  " + calcScale.y + "\r\n";
+                        s += "scale.z  " + calcScale.z + "\r\n";
+                        s += "calcpos.x  " + calcpos.x + "\r\n";
+                        s += "calcpos.y  " + calcpos.y + "\r\n";
+                        s += "calcpos.z  " + calcpos.z + "\r\n";
+                        s += "xfactor  " + xfactor + "\r\n";
+                        s += "xoffset  " + xoffset + "\r\n";
+                        s += "yfactor  " + yfactor + "\r\n";
+                        s += "yoffset  " + yoffset + "\r\n";
+                        s += "zfactor  " + zfactor + "\r\n";
+                        s += "zoffset  " + zoffset + "\r\n";
+                        s += "PositionX  " + tmKF.PositionX + "\r\n";
+                        s += "PositionY  " + tmKF.PositionY + "\r\n";
+                        s += "PositionZ  " + tmKF.PositionZ + "\r\n";
+                        s += "RotationOffsetX  " + tmKF.RotationOffsetX + "\r\n";
+                        s += "RotationOffsetY  " + tmKF.RotationOffsetY + "\r\n";
+                        s += "RotationOffsetZ  " + tmKF.RotationOffsetZ + "\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                    }
+  
                 }
-                if (orgHeight > 0)
-                {
-                    tmKF.Height = orgHeight;
-                }
+                SaveLogFile(MethodBase.GetCurrentMethod(), s1); // log current keyframe data
+                prevCalcPos = newCalcPos;
+                prevCalcScale = newCalcScale;
                 objidx++;
             }
 
@@ -672,15 +824,15 @@ namespace CTAImport
                 lastkey_index = 0;
             }
             for (int i = lastkey_index; i < vidTrack.TrackMotion.MotionKeyframes.Count; i++)
-            { 
-                TrackMotionKeyframe tmkf = vidTrack.TrackMotion.MotionKeyframes[i]; 
+            {
+                TrackMotionKeyframe tmkf = vidTrack.TrackMotion.MotionKeyframes[i];
                 lastkey_index = i;
 
                 if (tmkf.Position.ToMilliseconds() == time)
                 {
                     s = "Keyframe found: " + tmkf.Position.ToPositionString();
                     SaveLogFile(MethodBase.GetCurrentMethod(), s);
-                    return tmkf; 
+                    return tmkf;
                 }
                 else
                 {
@@ -741,13 +893,15 @@ namespace CTAImport
 
         public bool Layer_Add_ScaleKey(ref VideoTrack vidTrack, Comp jsonComp)
         {
+            /*
+            
             CompObj compObj = jsonComp.compObj;
 
             ScaleObj compScale = new ScaleObj();
             compScale.x = jsonComp.compScale.scaleX;
             compScale.y = jsonComp.compScale.scaleZ;
             compScale.z = jsonComp.compScale.scaleY;
-            
+
             string s;
 
             foreach (ScaleObj scaleobj in compObj.scaleObjs)
@@ -766,7 +920,7 @@ namespace CTAImport
 
                 ScaleObj calcScale = Layer_Calculate_Scale(scaleobj, compScale);
 
-                if ((orgWidth/orgHeight)>((double)(SceneWidth)/(double)(SceneHeight))) // orgWidth is the scale factor
+                if ((orgWidth / orgHeight) > ((double)(SceneWidth) / (double)(SceneHeight))) // orgWidth is the scale factor
                 {
                     s = "\r\n";
                     s += "Objwidth" + "\r\n";
@@ -776,7 +930,7 @@ namespace CTAImport
                     SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
                     tmKF.Width = orgWidth * calcScale.x;
-                    tmKF.Height = orgWidth * calcScale.y * SceneHeight / SceneWidth ;
+                    tmKF.Height = orgWidth * calcScale.y * SceneHeight / SceneWidth;
                 }
                 else                                       // objheight is the scale factor
                 {
@@ -807,11 +961,13 @@ namespace CTAImport
 
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
             }
+            */
             return true;
         }
 
         public bool Layer_Add_RotationKey(ref VideoTrack vidTrack, Comp jsonComp)
         {
+            /*
             CompObj compObj = jsonComp.compObj;
 
             foreach (RotObj rotobj in compObj.rotObjs)
@@ -835,6 +991,7 @@ namespace CTAImport
                 tmKF.RotationZ = calcRot.z;
 
             }
+            */
             return true;
         }
 
@@ -854,7 +1011,7 @@ namespace CTAImport
             }
         }
 
-        public void Layer_Create(Comp jsonComp, ref int trackindex)
+        public void Layer_Create(Comp jsonComp, ref int trackindex,bool updateonly=false)
         {
             string ImageDir;
             string fileName;
@@ -862,30 +1019,46 @@ namespace CTAImport
 
             CompObj compObj = jsonComp.compObj;
 
-            if (jsonComp.hasVideo)
+            if (updateonly == false)
             {
-                ImageDir = VideoDir;
-                fileName = Path.Combine(maindir, SceneName, ImageDir, compObj.fileName);
-            }
-            else
-            {
-                if (compObj.count == 1)
+
+                if (jsonComp.hasVideo)
                 {
-                    ImageDir = SingleImageDir;
+                    ImageDir = VideoDir;
                     fileName = Path.Combine(maindir, SceneName, ImageDir, compObj.fileName);
                 }
                 else
                 {
-                    ImageDir = SequenceImageDir;
-                    fileName = Path.Combine(maindir, SceneName, ImageDir, jsonComp.name, compObj.fileName);
+                    if (compObj.count == 1)
+                    {
+                        ImageDir = SingleImageDir;
+                        fileName = Path.Combine(maindir, SceneName, ImageDir, compObj.fileName);
+                    }
+                    else
+                    {
+                        ImageDir = SequenceImageDir;
+                        fileName = Path.Combine(maindir, SceneName, ImageDir, jsonComp.name, compObj.fileName);
+                    }
                 }
-            }
 
-            vidTrack = AddVideoTrack(jsonComp.name, trackindex);
-            trackindex += 1;
-            AddFileToTimeline(fileName, vidTrack, cursorLocation, compObj.count, fps);
-            vidTrack.CompositeMode = CompositeMode.SrcAlpha3D;
-            vidTrack.CompositeNestingLevel = 1;
+                vidTrack = AddVideoTrack(jsonComp.name, trackindex);
+
+                trackindex += 1;
+                AddFileToTimeline(fileName, vidTrack, cursorLocation, compObj.count, fps);
+                vidTrack.CompositeMode = CompositeMode.SrcAlpha3D;
+                vidTrack.CompositeNestingLevel = 1;
+            }
+            else
+            {
+                vidTrack = (VideoTrack) myVegas.Project.Tracks[trackindex];
+             
+                string s = "\r\n";
+                s += "Update Track " + trackindex + "\r\n";
+                s += "Trackname " + vidTrack.Name + "\r\n";
+                SaveLogFile(MethodBase.GetCurrentMethod(), s);
+
+                trackindex += 1;
+            }
 
             Layer_SetProperty(ref vidTrack, jsonComp);
 
@@ -901,7 +1074,7 @@ namespace CTAImport
             aeCamera.pos = new PosObj();
             aeCamera.pos.x = CTAScene.width / 2;
             aeCamera.pos.y = CTAScene.height / 2;
- 
+
             // set value zoom by focal length
             double value = jsonCamera.camLens * cameraFLM;
             aeCamera.zoom = value;
@@ -943,28 +1116,28 @@ namespace CTAImport
                 PosObj calcpos = Camera_Calculate_Position(posobj);
 
                 PosObj posfactor = new PosObj();
-                posfactor.x = -(double)numParam07.Value / 100;
-                posfactor.y = (double)numParam08.Value / 100;
-                posfactor.z = -0.67 * (double)numParam09.Value / 100;
+                posfactor.x = -(double)numParam10.Value / 100;
+                posfactor.y = (double)numParam11.Value / 100;
+                posfactor.z = (double)numParam12.Value / 100;
 
                 PosObj posoffset = new PosObj();
-                posoffset.x = SceneWidth * (double)numParam01.Value/100;
-                posoffset.y = SceneHeight * (double)numParam02.Value/100;
-                posoffset.z = SceneHeight * (double)numParam03.Value/100;
-                               
-                tmKF.Type = VideoKeyframeType.Linear;
-                tmKF.PositionX = posfactor.x * (calcpos.x) + posoffset.x;
-                tmKF.PositionY = posfactor.y * (calcpos.y) + posoffset.y;
-                tmKF.PositionZ = posfactor.z * (calcpos.z) + posoffset.z;
+                posoffset.x = (double)numParam04.Value;
+                posoffset.y = (double)numParam05.Value;
+                posoffset.z = (double)numParam06.Value;
 
-                orgWidth  = (int) ((double) SceneWidth * (double) numParam11.Value /100);
+                tmKF.Type = VideoKeyframeType.Linear;
+                tmKF.PositionX = (calcpos.x * posfactor.x) + posoffset.x;
+                tmKF.PositionY = (calcpos.y * posfactor.y) + posoffset.y;
+                tmKF.PositionZ = (calcpos.z - 1080) * posfactor.z + posoffset.z;
+
+                orgWidth = (int)((double)SceneWidth);
                 if (orgWidth > 0)
                 {
                     tmKF.Width = orgWidth;
                     tmKF.Height = orgWidth;
                 }
 
-                tmKF.Depth = SceneHeight * (double)numParam10.Value/100;
+                tmKF.Depth = SceneHeight;
 
                 string s = "Camera_add_Pos_key\r\n";
                 s += "Camera\r\n";
@@ -972,7 +1145,13 @@ namespace CTAImport
                 s += "calcpos.x  " + calcpos.x + "\r\n";
                 s += "calcpos.y  " + calcpos.y + "\r\n";
                 s += "calcpos.z  " + calcpos.z + "\r\n";
-                
+                s += "xfactor  " + posfactor.x + "\r\n";
+                s += "xoffset  " + posoffset.x + "\r\n";
+                s += "yfactor  " + posfactor.y + "\r\n";
+                s += "yoffset  " + posoffset.y + "\r\n";
+                s += "zfactor  " + posfactor.z + "\r\n";
+                s += "zoffset  " + posoffset.y + "\r\n";
+
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
             }
             return true;
@@ -1013,7 +1192,7 @@ namespace CTAImport
         {
             PosObj pos = new PosObj();
 
-            double camRatio = cameraRatio;
+            double camRatio = -this.cameraRatio;
 
             double transFactorX = sceneRatio.width / sceneRatio.scene;
             double transFactorY = sceneRatio.height / sceneRatio.scene;
@@ -1023,7 +1202,19 @@ namespace CTAImport
 
             pos.x = transFactorX * (posObj.x);
             pos.y = transFactorY * (-posObj.z);  // z and y are exchanged
-            pos.z = camRatio * posObj.y;
+            pos.z = posObj.y * camRatio; // (-0.995);
+
+            string s = "Camera_Calculate_Position\r\n";
+            s += "Camera\r\n";
+            s += posObj.time + "\r\n";
+            s += "transFactorX  " + transFactorX + "\r\n";
+            s += "transFactorY  " + transFactorY + "\r\n";
+            s += "camRatio  " + camRatio + "\r\n";
+            s += "pos.x  " + pos.x + "\r\n";
+            s += "pos.y  " + pos.y + "\r\n";
+            s += "pos.z  " + pos.z + "\r\n";
+
+            SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
             return pos;
 
@@ -1038,21 +1229,42 @@ namespace CTAImport
         public void ImportCTAProject(Vegas vegas)
         {
             myVegas = vegas;
-            SaveLogFile(MethodBase.GetCurrentMethod(), "Started",true);
+            SaveLogFile(MethodBase.GetCurrentMethod(), "Started", true);
 
-            string FileName = GetFileName("Please select CartoonAnimator JSON File");
+            bool stopexecution = false;
+
+            FileName = GetFileName("Please select CartoonAnimator JSON File",FileName);
 
             if (FileName != null)
             {
+                ShowLogMessage("Opening JSON file " + FileName + "\r\n");
                 Create_Initial();
+                try
+                {
+                    jsonString = File.ReadAllText(FileName);
+                }
+                catch (Exception e)
+                {
+                    ShowLogMessage("**File-ERROR** " + e.Message + "\r\n");
+                    stopexecution=true;
+                }
 
-                jsonString = File.ReadAllText(FileName);
-                CTAScene = JsonSerializer.Deserialize<Root>(jsonString);
-                maindir = Path.GetDirectoryName(FileName);
-
-                Create_Project();
-                Create_Setup();
-                Comp_Create();
+                try
+                {
+                    CTAScene = JsonSerializer.Deserialize<Root>(jsonString);
+                }
+                catch (Exception e)
+                {
+                    ShowLogMessage("**JSON-ERROR** " + e.Message + "\r\n");
+                    stopexecution=true;
+                }
+                if (!stopexecution)
+                {
+                    maindir = Path.GetDirectoryName(FileName);
+                    Create_Project();
+                    Create_Setup();
+                    Comp_Create();
+                }
             }
         }
 
@@ -1070,8 +1282,9 @@ namespace CTAImport
                 s += "* HasVideo:" + jsonComp.hasVideo + "\r\n";
                 s += "------------------------------------------------------------------------------------------------" + "\r\n";
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                ShowLogMessage("Create Track: " + jsonComp.name + "\r\n");
 
-                if (jsonComp.hasAudio==true)
+                if (jsonComp.hasAudio == true)
                 {
                     Audio_Create(jsonComp.name, ref trackindex);
                 }
@@ -1089,10 +1302,11 @@ namespace CTAImport
                 return;
             }
             */
+            ShowLogMessage("Create Cameratrack\r\n");
             if (use_camera == true)
             {
                 CameraVidtrack = vidTrack;
-                
+
                 Camera_Create(vidTrack, jsonCamera, 0);
             }
 
@@ -1115,37 +1329,26 @@ namespace CTAImport
             s += "heightRatio  " + heightRatio + "\r\n";
             s += "sceneRatio.scene  " + sceneRatio.scene + "\r\n";
 
-            
+
             SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
             sceneRatio.width = widthRatio;
             sceneRatio.height = heightRatio;
         }
 
-        public double SetCameraRatio()
+        public void SetCameraRatio()
         {
             var value = CTAScene.Create.camera.camLens * cameraFLM;
-            double cameraRatio = (Math.Abs(value / standardZinCTACam));
-            double cameraRatio_final = cameraRatio * (double) numParam13.Value / 100;
-            
-            string s = "cameraRatio   " + cameraRatio + "\r\n";
-            s += "CameraRationFactor  " + numParam13.Value + "\r\n";
-            s += "cameraRatio_final  " + cameraRatio_final + "\r\n";
+            this.cameraRatio = (Math.Abs(value / standardZinCTACam)) * 0.26 * (double)numParam13.Value/100.0;
+
+            string s = "cameraRatio   " + this.cameraRatio + "\r\n";
+ 
             SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
-            return cameraRatio_final;
+            return ;
         }
-
-        public void Camera_Calc_Position(Camera camera, Root CTAScene)
-        {
-            /*
-            var fps = CTAScene.fps;
-            var transFactorX = sceneRatio.width / sceneRatio.scene;
-            var transFactorY = sceneRatio.height / sceneRatio.scene;
-            */
-        }
-
-        public string GetFileName(string Title)
+ 
+        public string GetFileName(string Title, string filename)
         {
             OpenFileDialog svd = new OpenFileDialog();
             svd.Title = Title;
@@ -1153,7 +1356,11 @@ namespace CTAImport
             {
                 svd.InitialDirectory = "D:\\CartoonAnimator\\AE_export";
             }
-            
+            if (filename != "")
+            {
+                svd.FileName = filename;
+            }
+
             if (svd.ShowDialog() == DialogResult.OK)
             { return svd.FileName; }
             else
@@ -1184,9 +1391,9 @@ namespace CTAImport
 
         public AudioTrack AddAudioTrack(string trackname, int trackindex)
         {
-           AudioTrack newTrack = new AudioTrack(myVegas.Project, trackindex, trackname);
-           myVegas.Project.Tracks.Add(newTrack);
-           return newTrack;
+            AudioTrack newTrack = new AudioTrack(myVegas.Project, trackindex, trackname);
+            myVegas.Project.Tracks.Add(newTrack);
+            return newTrack;
         }
 
         public void AddFileToTimeline(string FileName, VideoTrack vidTrack, Timecode position, int count, double fps)
@@ -1198,16 +1405,16 @@ namespace CTAImport
             if (count == 1)
             {
                 mymedia = Media.CreateInstance(myVegas.Project, FileName);
-                string s = "Count=" + count + "\r\n";
-                s += "Filename: " + FileName +"\r\n";
+                string s = "Filename: " + FileName + "\r\n";
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                ShowLogMessage("Added " + s);
             }
             else
             {
                 mymedia = myVegas.Project.MediaPool.AddImageSequence(FileName, count, fps);
-                string s = "Count=" + count + "\r\n";
-                s += "Filename: " + FileName + "\r\n";
+                string s = FileName + "(" + count + ")" + "\r\n";
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                ShowLogMessage("Added ImageSequence:" + s);
             }
 
             if (mymedia.HasVideo())
@@ -1221,7 +1428,7 @@ namespace CTAImport
                     Timecode length_tc;
                     if (count == 0) // Image only
                     {
-                        int length_ms = (int) (duration);
+                        int length_ms = (int)(duration);
                         length_tc = Timecode.FromMilliseconds(length_ms);
                         s = "Count=" + count + "\r\n";
                         s += "Duration: (s) " + duration + "\r\n";
@@ -1241,7 +1448,7 @@ namespace CTAImport
                             int length_ms = (int)(duration);
                             length_tc = Timecode.FromMilliseconds(length_ms);
                         }
-                        
+
                     }
                     s = "Create VideoEvent - Count=" + count + "\r\n";
                     s += "Eventlength: " + length_tc.ToPositionString() + "\r\n";
@@ -1253,8 +1460,6 @@ namespace CTAImport
                     VideoStream vs = (VideoStream)stream;
                     orgWidth = vs.Width;
                     orgHeight = vs.Height;
-
-
                 }
             }
         }
@@ -1269,22 +1474,26 @@ namespace CTAImport
             SaveLogFile(MethodBase.GetCurrentMethod(), s);
             mymedia = Media.CreateInstance(myVegas.Project, FileName);
             s = "Create Media - Filename: " + FileName + "\r\n";
+            ShowLogMessage(s);
             SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
             MediaStream stream = mymedia.Streams.GetItemByMediaType(MediaType.Audio, 0);
             if (stream != null)
             {
-               s = "Create AudioEvent " + FileName + "\r\n";
+                s = "Create AudioEvent " + FileName + "\r\n";
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
                 AudioEvent myNewAudioEvent = new AudioEvent(position, stream.Length);
                 audioTrack.Events.Add(myNewAudioEvent);
                 Take myNewTake = new Take(stream);
                 myNewAudioEvent.Takes.Add(myNewTake);
-         }
-    }
+            }
+        }
+
+
+
         public void SaveLogFile(object method, string message, bool start = false)
         {
-            if (debug==true)
+            if (debug == true)
             {
                 string location = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\VEGAS Pro\20.0\";
                 FileMode mode;
@@ -1314,7 +1523,17 @@ namespace CTAImport
                     }
                 }
             }
-           
+
+        }
+
+        public void ShowLogMessage(string message, bool start = false)
+        {
+            if (start == true)
+            {
+                LogTextbox.Text = "";
+            }
+            LogTextbox.AppendText(message);
+
         }
 
         private void numParam01_ValueChanged(object sender, EventArgs e)
@@ -1326,5 +1545,12 @@ namespace CTAImport
         {
 
         }
+
+        private void numParam07_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }
+ 
+
