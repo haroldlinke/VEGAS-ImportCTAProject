@@ -19,7 +19,7 @@ namespace CTAImport
     public partial class CTAIMainForm : UserControl
     {
        Vegas myVegas;
-        string CTAVersion = "V01.017";
+        string CTAVersion = "V01.020";
 
         bool debug = false;
 
@@ -82,8 +82,7 @@ namespace CTAImport
             numParam13.Value = 100;
 
             btnImportCTA.Text = "Import CTA Project";
-            btnRecalcCameraKeyFrames.Text = "Recalc Camera KeyFrames";
-            btnRecalcCameraKeyFrames.Visible = false;
+          
             setcolors();
         }
 
@@ -96,46 +95,25 @@ namespace CTAImport
 
         public void btnImportCTA_Click(object sender, EventArgs e)
         {
-            string s = "CTA Import - Version:" + this.CTAVersion;
-            SaveLogFile(MethodBase.GetCurrentMethod(), s, true);
-            using (UndoBlock undo = new UndoBlock("Import CTA Project"))
-            {
-                ImportCTAProject(myVegas);
-            }
-        }
 
-        public void btnRecalcCameraKeyFrames_Click(object sender, EventArgs e)
-        {
             try
             {
-                using (UndoBlock undo = new UndoBlock("Recalc Camera KeyFrames"))
+                string s = "CTA Import - Version:" + this.CTAVersion;
+                SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                using (UndoBlock undo = new UndoBlock("Import CTA Project"))
                 {
-                    SaveLogFile(MethodBase.GetCurrentMethod(), "Started");
-                    Camera_Create(CameraVidtrack, myCreate.camera, 0);
-                    int trackstartindex = CameraVidtrack.Index;
-                    trackstartindex += 1; // index of track with first layer
-
-                    foreach (Comp jsonComp in myCreate.comps)
-                    {
-                        string s = "------------------------------------------------------------------------------------------------" + "\r\n";
-                        s += "* Update Layer started: " + jsonComp.name + "\r\n";
-                        s += "* HasAudio:" + jsonComp.hasAudio + "\r\n";
-                        s += "* HasVideo:" + jsonComp.hasVideo + "\r\n";
-                        s += "* trackstartindex:" + trackstartindex + "\r\n";
-                        s += "------------------------------------------------------------------------------------------------" + "\r\n";
-                        SaveLogFile(MethodBase.GetCurrentMethod(), s);
-                        ShowLogMessage("Update Track: " + jsonComp.name + "\r\n");
-
-                        Layer_Create(jsonComp, ref trackstartindex, updateonly: true);
-                    }
+                    ImportCTAProject(myVegas);
                 }
             }
             catch (Exception exc)
             {
-                ShowLogMessage("**Update-ERROR** " + exc.Message + "\r\n");
-            }
-        }
+                ShowLogMessage("**IMPORT App ERROR** " + exc.Message + "\r\n");
+                SaveLogFile(MethodBase.GetCurrentMethod(), "**IMPORT App ERROR** " + exc.Message + "\r\n");
 
+            }
+
+            
+        }
 
         // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
         public class Background
@@ -308,6 +286,7 @@ namespace CTAImport
         string VideoDir;
         double duration;
         double cameraRatio;
+        bool error_found;
         VideoTrack CameraVidtrack;
         Timecode cursorLocation;
         public SceneRatio sceneRatio;
@@ -363,7 +342,10 @@ namespace CTAImport
 
         public void Comp_Create()
         {
-            ShowLogMessage("---------------------------------------\r\nImport Started\r\n---------------------------------------\r\n");
+            string s;
+            s = "---------------------------------------\r\nImport Started\r\n---------------------------------------\r\n";
+            ShowLogMessage(s);
+            SaveLogFile(MethodBase.GetCurrentMethod(), s);
             use_camera = true;
             // create parent track
             VideoTrack vidTrack = CreateFirstVideoTrack("Camera");
@@ -374,7 +356,18 @@ namespace CTAImport
             {
                 Comp_Add_Camera(vidTrack);
             }
-            ShowLogMessage("---------------------------------------\r\nImport Finished\r\n---------------------------------------\r\n");
+            if (error_found)
+            {
+                s="---------------------------------------\r\nImport Finished with ERRORS\r\n---------------------------------------\r\n";
+                ShowLogMessage(s);
+                SaveLogFile(MethodBase.GetCurrentMethod(), s);
+            }
+            else
+            {
+                s="---------------------------------------\r\nImport Finished\r\n---------------------------------------\r\n";
+                ShowLogMessage(s);
+                SaveLogFile(MethodBase.GetCurrentMethod(), s);
+            }
         }
 
         public void Audio_Create(string jsonComp_name, ref int trackindex)
@@ -474,13 +467,14 @@ namespace CTAImport
             return calcanchor;
         }
 
-        public Pivot Layer_Search_Correponding_Pivot(Comp jsonComp, int time, ref int start_index)
+        public Pivot Layer_Search_Correponding_Pivot(Comp jsonComp, double time, ref int start_index)
         {
             Pivot pivot = new Pivot();
             Pivot search_pivot;
             Pivot last_search_pivot;
             double sceneRatio = this.sceneRatio.scene;
             last_search_pivot = jsonComp.compObj.pivot[0];
+            time = time - timeShift;
 
             for (int i = start_index; i < jsonComp.compObj.pivot.Count; i++)
             {
@@ -595,7 +589,7 @@ namespace CTAImport
             PosObj calcpos;
             foreach (PosObj posobj in compObj.posObjs)
             {
-                Timecode kftime = Timecode.FromMilliseconds(scaletime * posobj.time);
+                //Timecode kftime = Timecode.FromMilliseconds(posobj.time);
                 TrackMotionKeyframe tmKF;
                 if (posobj.time == -1)
                 {
@@ -603,7 +597,7 @@ namespace CTAImport
                 }
                 else
                 {
-                    tmKF = Search_Motion_Keyframe(ref vidTrack, scaletime * posobj.time);
+                    tmKF = Search_Motion_Keyframe(ref vidTrack, posobj.time);
                 }
 
                 calcpos = Layer_Calculate_Position(posobj);
@@ -818,7 +812,7 @@ namespace CTAImport
         public TrackMotionKeyframe Search_Motion_Keyframe(ref VideoTrack vidTrack, double time)
         {
             string s;
-            time = scaletime * time - timeShift;
+            time = time - timeShift;
             if (time == cursorLocation.ToMilliseconds())
             {
                 lastkey_index = 0;
@@ -1016,8 +1010,10 @@ namespace CTAImport
             string ImageDir;
             string fileName;
             VideoTrack vidTrack;
+            bool stopexecution = false;
 
             CompObj compObj = jsonComp.compObj;
+            bool hasvideo = false;
 
             if (updateonly == false)
             {
@@ -1026,6 +1022,7 @@ namespace CTAImport
                 {
                     ImageDir = VideoDir;
                     fileName = Path.Combine(maindir, SceneName, ImageDir, compObj.fileName);
+                    hasvideo = true;
                 }
                 else
                 {
@@ -1044,11 +1041,12 @@ namespace CTAImport
                 vidTrack = AddVideoTrack(jsonComp.name, trackindex);
 
                 trackindex += 1;
-                AddFileToTimeline(fileName, vidTrack, cursorLocation, compObj.count, fps);
+
+                AddFileToTimeline(fileName, vidTrack, cursorLocation, compObj.count, fps, hasvideo, ref stopexecution);
                 vidTrack.CompositeMode = CompositeMode.SrcAlpha3D;
                 vidTrack.CompositeNestingLevel = 1;
             }
-            else
+            else // does not work correctly, will not be used
             {
                 vidTrack = (VideoTrack) myVegas.Project.Tracks[trackindex];
              
@@ -1059,9 +1057,10 @@ namespace CTAImport
 
                 trackindex += 1;
             }
-
-            Layer_SetProperty(ref vidTrack, jsonComp);
-
+            if (stopexecution==false)
+            {
+                Layer_SetProperty(ref vidTrack, jsonComp);
+            }
         }
 
 
@@ -1229,15 +1228,17 @@ namespace CTAImport
         public void ImportCTAProject(Vegas vegas)
         {
             myVegas = vegas;
-            SaveLogFile(MethodBase.GetCurrentMethod(), "Started", true);
+            SaveLogFile(MethodBase.GetCurrentMethod(), "Started" + "\r\n", true);
 
             bool stopexecution = false;
+            error_found = false;
 
             FileName = GetFileName("Please select CartoonAnimator JSON File",FileName);
 
             if (FileName != null)
             {
                 ShowLogMessage("Opening JSON file " + FileName + "\r\n");
+                SaveLogFile(MethodBase.GetCurrentMethod(), "Opening JSON file " + FileName + "\r\n");
                 Create_Initial();
                 try
                 {
@@ -1246,7 +1247,8 @@ namespace CTAImport
                 catch (Exception e)
                 {
                     ShowLogMessage("**File-ERROR** " + e.Message + "\r\n");
-                    stopexecution=true;
+                    SaveLogFile(MethodBase.GetCurrentMethod(), "**File-ERROR** " + e.Message + "\r\n");
+                    stopexecution =true;
                 }
 
                 try
@@ -1256,7 +1258,8 @@ namespace CTAImport
                 catch (Exception e)
                 {
                     ShowLogMessage("**JSON-ERROR** " + e.Message + "\r\n");
-                    stopexecution=true;
+                    SaveLogFile(MethodBase.GetCurrentMethod(), "**JSON-ERROR** " + e.Message + "\r\n");
+                    stopexecution =true;
                 }
                 if (!stopexecution)
                 {
@@ -1272,7 +1275,7 @@ namespace CTAImport
         {
             int trackindex = 1;
 
-            SaveLogFile(MethodBase.GetCurrentMethod(), "Started");
+            SaveLogFile(MethodBase.GetCurrentMethod(), "Started" + "\r\n");
 
             foreach (Comp jsonComp in myCreate.comps)
             {
@@ -1352,6 +1355,10 @@ namespace CTAImport
         {
             OpenFileDialog svd = new OpenFileDialog();
             svd.Title = Title;
+            svd.RestoreDirectory = true;
+            svd.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+            svd.FilterIndex = 2;
+
             if (this.debug == true)
             {
                 svd.InitialDirectory = "D:\\CartoonAnimator\\AE_export";
@@ -1362,7 +1369,9 @@ namespace CTAImport
             }
 
             if (svd.ShowDialog() == DialogResult.OK)
-            { return svd.FileName; }
+            { 
+                return svd.FileName;
+            }
             else
             {
                 MessageBox.Show("No file was selected");
@@ -1396,30 +1405,80 @@ namespace CTAImport
             return newTrack;
         }
 
-        public void AddFileToTimeline(string FileName, VideoTrack vidTrack, Timecode position, int count, double fps)
+        public void AddFileToTimeline(string FileName, VideoTrack vidTrack, Timecode position, int count, double fps, bool hasvideo, ref bool stopexecution)
         {
+            string s;
             Media mymedia = null;
             orgWidth = 0;
             orgHeight = 0;
 
-            if (count == 1)
+            if (hasvideo)
             {
-                mymedia = Media.CreateInstance(myVegas.Project, FileName);
-                string s = "Filename: " + FileName + "\r\n";
-                SaveLogFile(MethodBase.GetCurrentMethod(), s);
-                ShowLogMessage("Added " + s);
+                try
+                {
+                    if (count == 0)
+                    {
+                        stopexecution = true; // no video
+                    }
+                    else
+                    {
+                        mymedia = new Media(FileName); // Media.CreateInstance(myVegas.Project, FileName);
+                        s = "Filename: " + FileName + "\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                        ShowLogMessage("Added " + s);
+                    }
+
+                   
+                }
+                catch (Exception e)
+                {
+                    s = "**READFILE ERROR:" + FileName + "\r\nFileformat not supported by VEGAS\r\n";
+                    SaveLogFile(MethodBase.GetCurrentMethod(), s + e);
+                    ShowLogMessage(s);
+                    stopexecution = true;
+                }
             }
             else
             {
-                mymedia = myVegas.Project.MediaPool.AddImageSequence(FileName, count, fps);
-                string s = FileName + "(" + count + ")" + "\r\n";
-                SaveLogFile(MethodBase.GetCurrentMethod(), s);
-                ShowLogMessage("Added ImageSequence:" + s);
+                if (count <= 1)
+                {
+                    try
+                    {
+                        mymedia = new Media(FileName); // Media.CreateInstance(myVegas.Project, FileName);
+                        s = "Filename: " + FileName + "\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                        ShowLogMessage("Added " + s);
+                    }
+                    catch (Exception e)
+                    {
+                        s = "**READFILE ERROR:" + FileName + "\r\nFileformat not supported by VEGAS\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s + e);
+                        ShowLogMessage(s);
+                        stopexecution = true;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        mymedia = myVegas.Project.MediaPool.AddImageSequence(FileName, count, fps);
+                        s = FileName + "(" + count + ")" + "\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s);
+                        ShowLogMessage("Added ImageSequence:" + s);
+                    }
+                    catch (Exception e)
+                    {
+                        s = "**READFILE ERROR:" + FileName + "(" + count + ")\r\nFileformat not supported by VEGAS\r\n";
+                        SaveLogFile(MethodBase.GetCurrentMethod(), s + e);
+                        ShowLogMessage(s);
+                        stopexecution = true;
+                    }
+                }
             }
 
-            if (mymedia.HasVideo())
+            if ((stopexecution==false) && (mymedia.HasVideo()))
             {
-                string s = "Has Video" + "\r\n";
+                s = "Has Video" + "\r\n";
                 SaveLogFile(MethodBase.GetCurrentMethod(), s);
 
                 MediaStream stream = mymedia.Streams.GetItemByMediaType(MediaType.Video, 0);
