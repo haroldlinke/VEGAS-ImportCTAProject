@@ -34,6 +34,7 @@
             this.btnImportCTA = new System.Windows.Forms.Button();
             this.LogTextbox = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.numParam13 = new System.Windows.Forms.NumericUpDown();
             this.numParam12 = new System.Windows.Forms.NumericUpDown();
             this.numParam09 = new System.Windows.Forms.NumericUpDown();
             this.numParam06 = new System.Windows.Forms.NumericUpDown();
@@ -44,6 +45,7 @@
             this.numParam10 = new System.Windows.Forms.NumericUpDown();
             this.numParam02 = new System.Windows.Forms.NumericUpDown();
             this.numParam04 = new System.Windows.Forms.NumericUpDown();
+            this.lblParam13 = new System.Windows.Forms.Label();
             this.numParam07 = new System.Windows.Forms.NumericUpDown();
             this.lblParam12 = new System.Windows.Forms.Label();
             this.numParam01 = new System.Windows.Forms.NumericUpDown();
@@ -58,11 +60,9 @@
             this.lblParam04 = new System.Windows.Forms.Label();
             this.lblParam07 = new System.Windows.Forms.Label();
             this.lblParam01 = new System.Windows.Forms.Label();
-            this.btnRecalcCameraKeyFrames = new System.Windows.Forms.Button();
             this.lbl_copyright = new System.Windows.Forms.Label();
-            this.lblParam13 = new System.Windows.Forms.Label();
-            this.numParam13 = new System.Windows.Forms.NumericUpDown();
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numParam13)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam12)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam09)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam06)).BeginInit();
@@ -75,7 +75,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numParam04)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam07)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam01)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numParam13)).BeginInit();
             this.SuspendLayout();
             // 
             // lblMain1
@@ -113,7 +112,7 @@
             // 
             this.btnImportCTA.Location = new System.Drawing.Point(40, 90);
             this.btnImportCTA.Name = "btnImportCTA";
-            this.btnImportCTA.Size = new System.Drawing.Size(285, 49);
+            this.btnImportCTA.Size = new System.Drawing.Size(340, 49);
             this.btnImportCTA.TabIndex = 3;
             this.btnImportCTA.Text = "button1";
             this.btnImportCTA.UseVisualStyleBackColor = true;
@@ -125,7 +124,7 @@
             this.LogTextbox.Multiline = true;
             this.LogTextbox.Name = "LogTextbox";
             this.LogTextbox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.LogTextbox.Size = new System.Drawing.Size(285, 83);
+            this.LogTextbox.Size = new System.Drawing.Size(340, 83);
             this.LogTextbox.TabIndex = 4;
             // 
             // groupBox1
@@ -156,13 +155,29 @@
             this.groupBox1.Controls.Add(this.lblParam04);
             this.groupBox1.Controls.Add(this.lblParam07);
             this.groupBox1.Controls.Add(this.lblParam01);
-            this.groupBox1.Controls.Add(this.btnRecalcCameraKeyFrames);
             this.groupBox1.Location = new System.Drawing.Point(40, 262);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(340, 239);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Finetune Camera keyframes";
+            this.groupBox1.Text = "Finetune Keyframes";
+            // 
+            // numParam13
+            // 
+            this.numParam13.Location = new System.Drawing.Point(256, 210);
+            this.numParam13.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numParam13.Minimum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            -2147483648});
+            this.numParam13.Name = "numParam13";
+            this.numParam13.Size = new System.Drawing.Size(69, 20);
+            this.numParam13.TabIndex = 2;
             // 
             // numParam12
             // 
@@ -335,6 +350,15 @@
             this.numParam04.Size = new System.Drawing.Size(69, 20);
             this.numParam04.TabIndex = 2;
             // 
+            // lblParam13
+            // 
+            this.lblParam13.AutoSize = true;
+            this.lblParam13.Location = new System.Drawing.Point(174, 212);
+            this.lblParam13.Name = "lblParam13";
+            this.lblParam13.Size = new System.Drawing.Size(35, 13);
+            this.lblParam13.TabIndex = 1;
+            this.lblParam13.Text = "label4";
+            // 
             // numParam07
             // 
             this.numParam07.Location = new System.Drawing.Point(256, 49);
@@ -478,16 +502,6 @@
             this.lblParam01.TabIndex = 1;
             this.lblParam01.Text = "label4";
             // 
-            // btnRecalcCameraKeyFrames
-            // 
-            this.btnRecalcCameraKeyFrames.Location = new System.Drawing.Point(9, 19);
-            this.btnRecalcCameraKeyFrames.Name = "btnRecalcCameraKeyFrames";
-            this.btnRecalcCameraKeyFrames.Size = new System.Drawing.Size(270, 23);
-            this.btnRecalcCameraKeyFrames.TabIndex = 0;
-            this.btnRecalcCameraKeyFrames.Text = "Recalc Camera KeyFrames";
-            this.btnRecalcCameraKeyFrames.UseVisualStyleBackColor = true;
-            this.btnRecalcCameraKeyFrames.Click += new System.EventHandler(this.btnRecalcCameraKeyFrames_Click);
-            // 
             // lbl_copyright
             // 
             this.lbl_copyright.AutoSize = true;
@@ -496,32 +510,6 @@
             this.lbl_copyright.Size = new System.Drawing.Size(50, 13);
             this.lbl_copyright.TabIndex = 3;
             this.lbl_copyright.Text = "copyright";
-            // 
-            // lblParam13
-            // 
-            this.lblParam13.AutoSize = true;
-            this.lblParam13.Location = new System.Drawing.Point(174, 212);
-            this.lblParam13.Name = "lblParam13";
-            this.lblParam13.Size = new System.Drawing.Size(35, 13);
-            this.lblParam13.TabIndex = 1;
-            this.lblParam13.Text = "label4";
-            // 
-            // numParam13
-            // 
-            this.numParam13.Location = new System.Drawing.Point(256, 210);
-            this.numParam13.Maximum = new decimal(new int[] {
-            10000,
-            0,
-            0,
-            0});
-            this.numParam13.Minimum = new decimal(new int[] {
-            10000,
-            0,
-            0,
-            -2147483648});
-            this.numParam13.Name = "numParam13";
-            this.numParam13.Size = new System.Drawing.Size(69, 20);
-            this.numParam13.TabIndex = 2;
             // 
             // CTAIMainForm
             // 
@@ -538,6 +526,7 @@
             this.Size = new System.Drawing.Size(413, 557);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numParam13)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam12)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam09)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam06)).EndInit();
@@ -550,7 +539,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numParam04)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam07)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numParam01)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numParam13)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -576,7 +564,6 @@
         private System.Windows.Forms.Label lblParam02;
         private System.Windows.Forms.Label lblParam07;
         private System.Windows.Forms.Label lblParam01;
-        private System.Windows.Forms.Button btnRecalcCameraKeyFrames;
         private System.Windows.Forms.Label lbl_copyright;
         private System.Windows.Forms.NumericUpDown numParam12;
         private System.Windows.Forms.NumericUpDown numParam06;
